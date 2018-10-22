@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <time.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include "DES.h"
 #include "Util.h"
 using namespace std;
@@ -79,7 +80,7 @@ FileInfo getInfo(const string &path, bool isDecode, FILE *fin)
 {
     char bytes[1024];
     if (fin == NULL)
-        WriteError("File does not exist!");
+        WriteError("Input file does not exist!");
     if (isDecode)
     {
         fread(bytes, 1, 10, fin);
@@ -149,6 +150,12 @@ int main(int argc, char **argv)
 
     if (output.size() == 0)
         output = (isDecode) ? info.name : info.name + ".des";
+    else if (output[output.size() - 1] == '/')
+        output += (isDecode) ? info.name : info.name + ".des";
+
+    if (access(output.c_str(), F_OK) != -1)
+        WriteError(("Output file " + output + " has existed!").c_str());
+
     FILE *fout = fopen(output.c_str(), "w");
     if (!isDecode)
         WriteInfo(info, fout);
@@ -170,10 +177,10 @@ int main(int argc, char **argv)
         fwrite(block, 1, len, fout);
     }
 
-    printf("%s\n",output.c_str());
-    printf("Size: %lldB\n\n",info.size);
+    printf("%s\n", output.c_str());
+    printf("Size: %lldB\n\n", info.size);
     printf("###################\n");
-    printf("#  Key: %s  #\n", key);
+    printf("#  Key: %8s  #\n", key);
     printf("###################\n");
 
     fclose(fin);

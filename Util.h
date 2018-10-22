@@ -114,6 +114,6 @@ void WriteUsage()
 
 void WriteError(const char mesg[])
 {
-    printf("%s\n", mesg);
+    printf("Error: %s\n", mesg);
     exit(0);
 }
