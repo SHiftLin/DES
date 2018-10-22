@@ -5,6 +5,8 @@
 #include <string>
 #include <cmath>
 #include <algorithm>
+#include <time.h>
+#include <unistd.h>
 #include "DES.h"
 #include "Util.h"
 using namespace std;
@@ -44,7 +46,6 @@ void DES(char bytes[])
 {
     char B[BLK_SIZE], C[BLK_SIZE];
     int n = BitsSplit(bytes, BLK_BYTE, B);
-    print(B, BLK_SIZE);
     Permutate(B, BLK_SIZE, C, BLK_SIZE, IP1);
     for (int i = 0; i < ITER_NUM; i++)
     {
@@ -58,27 +59,74 @@ void DES(char bytes[])
     int m = BitsMerge(B, BLK_SIZE, bytes);
 }
 
+void RandomKey(char key[])
+{
+    srand((unsigned)time(NULL));
+    for (int i = 0; i < KEY_BYTE; i++)
+    {
+        int x = rand() % 3;
+        if (x == 0)
+            key[i] = '0' + rand() % 10;
+        else if (x == 1)
+            key[i] = 'A' + rand() % 26;
+        else
+            key[i] = 'a' + rand() % 26;
+    }
+    key[KEY_BYTE] = '\0';
+}
+
 int main(int argc, char **argv)
 {
-    char key[KEY_BYTE + 5] = "abcdefgh";
-    bool isDecode = true;
+    int flag = 0;
+    bool isDecode = false;
+    string input, output;
+    char key[KEY_BYTE + 5];
+    memset(key, 0, sizeof(key));
+
+    for (char ch; (ch = getopt(argc, argv, "dk:i:o:")) != -1;)
+    {
+        switch (ch)
+        {
+        case 'd':
+            isDecode = true;
+            break;
+        case 'k':
+            strncpy(key, optarg, KEY_BYTE);
+            flag |= 1;
+            break;
+        case 'i':
+            input = optarg;
+            flag |= 2;
+            break;
+        case 'o':
+            output = optarg;
+            break;
+        }
+    }
+
+    if ((flag & 2) == 0 || (isDecode && (flag & 1) == 0))
+        WriteUsage();
+
+    if (output.size() == 0)
+        output = input + ".des";
+
+    if ((flag & 1) == 0)
+        RandomKey(key);
+    printf("Key: %s\n", key);
     KeysGeneration(key, isDecode);
 
-    FILE *fin = fopen("TEST/test.txt", "r");
-    FILE *fout = fopen("TEST/test.des", "w");
+    FILE *fin = fopen(input.c_str(), "r");
+    FILE *fout = fopen(output.c_str(), "w");
 
     char block[BLK_BYTE];
     for (int cnt = 0; (cnt = fread(block, 1, BLK_BYTE, fin)) != 0;)
     {
         for (int i = cnt; i < BLK_BYTE; i++)
             block[i] = 0;
-        printf("%s\n", block);
         DES(block);
-        for (int i = 0; i < BLK_BYTE; i++)
-            printf("%x ", block[i]);
-        printf("\n");
         fwrite(block, 1, BLK_BYTE, fout); //decode????
     }
+
     fclose(fin);
     fclose(fout);
     return 0;

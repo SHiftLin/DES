@@ -1,4 +1,7 @@
 #include <iostream>
+#include <sys/stat.h>  
+
+typedef long long LL;
 
 void print(const char v[], int n)
 {
@@ -58,5 +61,23 @@ void Switch(char bits[], int n)
 {
     int m = n >> 1;
     for (int i = 0; i < m; i++)
-        swap(bits[i], bits[i + m]);
+        std::swap(bits[i], bits[i + m]);
+}
+
+LL getFileSize(const char *path)
+{
+    struct stat status;
+    if(stat(path,&status)==-1) return -1;
+    else return status.st_size;
+}
+
+void WriteUsage()
+{
+    printf("Usage:\n");
+    printf("./DES -i [input] [-dko]\n\n");
+    printf("      -d          Decode mode.\n");
+    printf("      -k key      Key.\n");
+    printf("      -o output   Output path.\n");
+    printf("\n");
+    exit(0);
 }
