@@ -75,12 +75,49 @@ void RandomKey(char key[])
     key[KEY_BYTE] = '\0';
 }
 
+FileInfo getInfo(const string &path, bool isDecode, FILE *fin)
+{
+    char bytes[1024];
+    if (fin == NULL)
+        WriteError("File does not exist!");
+    if (isDecode)
+    {
+        fread(bytes, 1, 10, fin);
+        LL size = BytesToInteger(bytes, 8);
+        int len = BytesToInteger(bytes + 8, 2);
+        fread(bytes, 1, len, fin);
+        bytes[len] = '\0';
+        string name = bytes;
+        return FileInfo(name, size);
+    }
+    else
+    {
+        LL size = getFileSize(path.c_str());
+        if (size == -1)
+            WriteError("Input file error!");
+        int p = path.rfind('/');
+        string name = (p == -1) ? path : path.substr(p + 1);
+        return FileInfo(name, size);
+    }
+}
+
+void WriteInfo(const FileInfo &info, FILE *fout)
+{
+    unsigned char bytes[1024];
+    IntegerToBytes(info.size, bytes, 8);
+    fwrite(bytes, 1, 8, fout);
+    IntegerToBytes(info.name.size(), bytes, 2);
+    fwrite(bytes, 1, 2, fout);
+    fwrite(info.name.c_str(), 1, info.name.size(), fout);
+}
+
 int main(int argc, char **argv)
 {
     int flag = 0;
     bool isDecode = false;
     string input, output;
-    char key[KEY_BYTE + 5];
+    FileInfo info;
+    char key[KEY_BYTE + 5], block[BLK_BYTE];
     memset(key, 0, sizeof(key));
 
     for (char ch; (ch = getopt(argc, argv, "dk:i:o:")) != -1;)
@@ -107,25 +144,37 @@ int main(int argc, char **argv)
     if ((flag & 2) == 0 || (isDecode && (flag & 1) == 0))
         WriteUsage();
 
+    FILE *fin = fopen(input.c_str(), "r");
+    info = getInfo(input.c_str(), isDecode, fin);
+
     if (output.size() == 0)
-        output = input + ".des";
+        output = (isDecode) ? info.name : info.name + ".des";
+    FILE *fout = fopen(output.c_str(), "w");
+    if (!isDecode)
+        WriteInfo(info, fout);
 
     if ((flag & 1) == 0)
         RandomKey(key);
-    printf("Key: %s\n", key);
     KeysGeneration(key, isDecode);
 
-    FILE *fin = fopen(input.c_str(), "r");
-    FILE *fout = fopen(output.c_str(), "w");
-
-    char block[BLK_BYTE];
-    for (int cnt = 0; (cnt = fread(block, 1, BLK_BYTE, fin)) != 0;)
+    for (int cnt = 0, tot = 0, len; (cnt = fread(block, 1, BLK_BYTE, fin)) != 0;)
     {
+        tot += cnt;
         for (int i = cnt; i < BLK_BYTE; i++)
             block[i] = 0;
         DES(block);
-        fwrite(block, 1, BLK_BYTE, fout); //decode????
+        if (isDecode && tot >= info.size)
+            len = BLK_BYTE - (tot - info.size);
+        else
+            len = BLK_BYTE;
+        fwrite(block, 1, len, fout);
     }
+
+    printf("%s\n",output.c_str());
+    printf("Size: %lldB\n\n",info.size);
+    printf("###################\n");
+    printf("#  Key: %s  #\n", key);
+    printf("###################\n");
 
     fclose(fin);
     fclose(fout);

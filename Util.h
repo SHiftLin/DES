@@ -1,12 +1,25 @@
 #include <iostream>
-#include <sys/stat.h>  
+#include <string>
+#include <sys/stat.h>
 
 typedef long long LL;
+
+struct FileInfo
+{
+    std::string name;
+    LL size;
+    FileInfo(){};
+    FileInfo(std::string _name, LL _size)
+    {
+        name = _name;
+        size = _size;
+    }
+};
 
 void print(const char v[], int n)
 {
     for (int i = 0; i < n; i++)
-        printf("%d", v[i]);
+        printf("%d ", v[i]);
     printf("\n");
 }
 
@@ -67,8 +80,25 @@ void Switch(char bits[], int n)
 LL getFileSize(const char *path)
 {
     struct stat status;
-    if(stat(path,&status)==-1) return -1;
-    else return status.st_size;
+    if (stat(path, &status) == -1)
+        return -1;
+    else
+        return status.st_size;
+}
+
+unsigned char *IntegerToBytes(LL x, unsigned char *bytes, int n)
+{
+    for (int i = n - 1; i >= 0; i--, x >>= 8)
+        bytes[i] = x & 255;
+    return bytes;
+}
+
+LL BytesToInteger(const char *bytes, int n)
+{
+    LL x = 0;
+    for (int i = 0; i < n; i++)
+        x = (x << 8) | (unsigned char)bytes[i];
+    return x;
 }
 
 void WriteUsage()
@@ -79,5 +109,11 @@ void WriteUsage()
     printf("      -k key      Key.\n");
     printf("      -o output   Output path.\n");
     printf("\n");
+    exit(0);
+}
+
+void WriteError(const char mesg[])
+{
+    printf("%s\n", mesg);
     exit(0);
 }
