@@ -104,10 +104,11 @@ LL BytesToInteger(const char *bytes, int n)
 void WriteUsage()
 {
     printf("Usage:\n");
-    printf("./DES -i [input] [-dko]\n\n");
+    printf("./DES -i input [-odk]\n\n");
+    printf("      -i input    Input path.\n");
+    printf("      -o output   Output path.\n");
     printf("      -d          Decode mode.\n");
     printf("      -k key      Key.\n");
-    printf("      -o output   Output path.\n");
     printf("\n");
     exit(0);
 }
